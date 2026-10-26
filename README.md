@@ -2,7 +2,7 @@
 
 **Autor: Arthur Juan — desenvolvido com auxílio de Inteligência Artificial.**
 
-Validação e análise de campanhas publicitárias, da leitura do CSV à entrega de um relatório interativo. Uma evolução do [projeto original de Arthur Juan](https://github.com/arthurjuancontato/pipeline-etl-python), organizada para o repositório **pipeline-etl-python-ia**.
+Validação e análise de campanhas publicitárias, da leitura do CSV à entrega de um relatório interativo. Uma evolução do [projeto original de Arthur Juan](https://github.com/arthurjuancontato/pipeline-etl-python), disponível no repositório **pipeline-etl-python-ia**.
 
 ## O que você pode fazer
 
@@ -25,6 +25,8 @@ O visual usa fundo escuro e destaques em verde, adapta-se a telas menores e poss
 Use **Python 3.11 ou 3.12**. Na pasta do projeto:
 
 ```powershell
+git clone https://github.com/arthurjuancontato/pipeline-etl-python-ia.git
+cd pipeline-etl-python-ia
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
@@ -94,7 +96,7 @@ pipeline-etl-python-ia/
 ├── output.html                 # Relatório pronto para abrir
 ├── requirements.txt            # Dependências diretas
 ├── requirements-lock.txt       # Ambiente validado para reprodução
-└── PUBLICACAO.md               # Preparação do repositório no GitHub
+└── PUBLICACAO.md               # Manutenção e publicação de atualizações
 ```
 
 ## Configuração e dependências
