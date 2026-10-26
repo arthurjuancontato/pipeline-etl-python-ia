@@ -1,19 +1,27 @@
-from typing import Optional
-from pydantic import BaseModel, Field
+"""Modelo de campanhas. Autor: Arthur Juan, com auxílio de IA."""
+from datetime import date
+from typing import Annotated
+
+from pydantic import BaseModel, ConfigDict, Field
+
+Texto = Annotated[str, Field(min_length=1)]
+Contagem = Annotated[int, Field(ge=0)]
 
 
 class PlanilhaVendas(BaseModel):
-    Organizador: int = Field(..., description="Identificador do organizador")
-    Ano_Mes: str = Field(..., description="Ano e mês do registro")
-    Dia_da_Semana: str = Field(..., description="Dia da semana correspondente à data")
-    Tipo_Dia: str = Field(..., description="Classificação do dia: útil, feriado, etc.")
-    Objetivo: str = Field(..., description="Objetivo da campanha ou ação")
-    Date: str = Field(..., description="Data da entrada no formato YYYY-MM-DD")
-    AdSet_name: Optional[str] = Field(None, description="Nome do conjunto de anúncios")
-    Amount_spent: float = Field(0.0, ge=0, le=1200.00, description="Valor gasto no anúncio (mínimo 0, máximo 1200.00)")    
-    Link_clicks: Optional[int] = Field(None, description="Número de cliques no link")
-    Impressions: int = Field(0, description="Número de impressões do anúncio")
-    Conversions: Optional[int] = Field(None, description="Número de conversões registradas")
-    Segmentacao: Optional[str] = Field(None, description="Segmentação usada no anúncio")
-    Tipo_de_Anuncio: str = Field(..., description="Tipo do anúncio")
-    Fase: str = Field(..., description="Fase da campanha")
+    model_config = ConfigDict(str_strip_whitespace=True, allow_inf_nan=False)
+
+    Organizador: Contagem
+    Ano_Mes: Texto
+    Dia_da_Semana: Texto
+    Tipo_Dia: Texto
+    Objetivo: Texto
+    Date: date
+    AdSet_name: str | None = None
+    Amount_spent: float = Field(default=0.0, ge=0, le=1200)
+    Link_clicks: Contagem | None = None
+    Impressions: Contagem = 0
+    Conversions: Contagem | None = None
+    Segmentacao: str | None = None
+    Tipo_de_Anuncio: Texto
+    Fase: Texto

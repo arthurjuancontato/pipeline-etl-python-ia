@@ -30,3 +30,6 @@ dados_validados.csv
 build/
 dist/
 *.egg-info/
+
+outputs/
+erros_validacao.csv

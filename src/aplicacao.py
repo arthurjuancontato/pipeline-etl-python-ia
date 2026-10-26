@@ -1,83 +1,43 @@
+"""Interface de Arthur Juan, desenvolvida com auxílio de IA."""
+import sys
+from pathlib import Path
+
+# Permite executar pelo Streamlit a partir de qualquer diretório.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 import pandas as pd
 import streamlit as st
-from pydantic import ValidationError
 
-from validador import PlanilhaVendas
-
-
-def validar_dados(df):
-    erros = []
-    dados_validados = []
-
-    for numero_linha, (_, row) in enumerate(df.iterrows(), start=2):
-        try:
-            # Converte valores ausentes do CSV para None
-            dados = {
-                coluna: None if pd.isna(valor) else valor
-                for coluna, valor in row.to_dict().items()
-            }
-
-            registro_validado = PlanilhaVendas(**dados)
-            dados_validados.append(registro_validado)
-
-        except ValidationError as e:
-            erros.append(f"Erro na linha {numero_linha}: {e}")
-
-    return dados_validados, erros
+from src.pipeline import ler_csv, validar_dados
 
 
 def main():
-    st.title("Validador de Dados de Campanhas")
-    st.write("Envie um arquivo CSV para validação.")
-
-    uploaded_file = st.file_uploader(
-        "Escolha um arquivo CSV",
-        type=["csv"],
-    )
-
-    if uploaded_file is not None:
-        try:
-            df = pd.read_csv(uploaded_file)
-
-            # Ajusta os nomes das colunas para corresponder ao modelo
-            df = df.rename(columns={
-                "Tipo_de_Anúncio": "Tipo_de_Anuncio",
-                "Segmentação": "Segmentacao",
-            })
-
-            st.write("Prévia dos dados:")
-            st.dataframe(df.head())
-
-            if st.button("Validar Dados"):
-                with st.spinner("Validando dados..."):
-                    dados_validados, erros = validar_dados(df)
-
-                if erros:
-                    st.error("Foram encontrados erros na validação:")
-                    for erro in erros:
-                        st.write(erro)
-                else:
-                    st.success("Todos os dados foram validados com sucesso!")
-                    st.write(
-                        f"Total de registros validados: {len(dados_validados)}"
-                    )
-
-                    df_validado = pd.DataFrame(
-                        [
-                            registro.model_dump()
-                            for registro in dados_validados
-                        ]
-                    )
-
-                    st.download_button(
-                        label="Download dos dados validados",
-                        data=df_validado.to_csv(index=False).encode("utf-8-sig"),
-                        file_name="dados_validados.csv",
-                        mime="text/csv",
-                    )
-
-        except Exception as e:
-            st.error(f"Erro ao processar o arquivo: {e}")
+    st.set_page_config(page_title="Pipeline ETL | Arthur Juan", layout="wide")
+    st.title("Validador de campanhas")
+    st.caption("Projeto de Arthur Juan, desenvolvido com auxílio de IA.")
+    st.write("Envie um CSV UTF-8 separado por vírgulas para validar e exportar os dados.")
+    enviado = st.file_uploader("Arquivo CSV", type=["csv"])
+    if enviado is None:
+        return
+    try:
+        df = ler_csv(enviado)
+        st.dataframe(df.head(20), use_container_width=True)
+        if st.button("Validar dados", type="primary"):
+            with st.spinner("Validando registros..."):
+                resultado = validar_dados(df)
+            if resultado.erros:
+                st.error(f"{len(resultado.erros)} erro(s) em {resultado.total} registros.")
+                erros = pd.DataFrame(resultado.erros)
+                st.dataframe(erros, use_container_width=True)
+                st.download_button("Baixar erros", erros.to_csv(index=False).encode("utf-8-sig"),
+                                   "erros_validacao.csv", "text/csv")
+            else:
+                st.success(f"{resultado.total} registros validados.")
+                st.download_button("Baixar dados validados",
+                                   resultado.dataframe().to_csv(index=False).encode("utf-8-sig"),
+                                   "dados_validados.csv", "text/csv")
+    except (ValueError, OSError, UnicodeError, pd.errors.ParserError) as exc:
+        st.error(f"Não foi possível processar o CSV: {exc}")
 
 
 if __name__ == "__main__":

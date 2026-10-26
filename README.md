@@ -1,101 +1,137 @@
-# Pipeline ETL com Python
+# Pipeline ETL com Python — versão com IA
 
-Análise exploratória e validação de dados de campanhas publicitárias em CSV com **Pandas**, **Pydantic**, **YData Profiling** e **Streamlit**.
+**Autor: Arthur Juan. Desenvolvido por Arthur Juan com auxílio de Inteligência Artificial.**
 
-O projeto lê arquivos locais, valida registros e permite exportar um CSV validado. Também gera um relatório HTML com estatísticas, valores ausentes e correlações.
+Evolução do projeto original de Arthur Juan para validar dados de campanhas, exportar CSVs e gerar relatórios exploratórios. Esta versão mantém os dados e o relatório original e melhora a organização, as validações e o uso pela linha de comando ou interface web.
 
-## Instalação
+## Melhorias desta versão
 
-Ambiente utilizado: **Python 3.12**. Execute na raiz do projeto:
+- Núcleo de processamento separado da interface, reutilizado pela CLI e pelo Streamlit.
+- Validação em lote com Pydantic e conversão com `itertuples`, evitando uma Series por linha.
+- Validação de datas reais, textos obrigatórios, valores finitos e contagens não negativas.
+- Detecção de colunas ausentes, cabeçalhos duplicados, aliases conflitantes e arquivos sem registros.
+- Erros estruturados por registro e campo, com download pela interface.
+- CSV de saída somente quando todo o arquivo é válido, com gravação temporária e substituição após conclusão.
+- Proteção contra sobrescrever o arquivo de entrada com a saída ou relatório.
+- Relatório exploratório opcional em modo mínimo, para reduzir o custo de geração.
+- Testes automatizados para validação, erros, exportação e CLI.
 
-```bash
-git clone https://github.com/arthurjuancontato/pipeline-etl-python.git
-cd pipeline-etl-python
-python -m venv .venv
-```
+## Preparação
 
-Ative o ambiente no Windows (PowerShell):
+Ambiente utilizado: **Python 3.12**. Abra o terminal na pasta que contém este README.
 
 ```powershell
+python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-```
-
-No Linux ou macOS:
-
-```bash
-source .venv/bin/activate
-```
-
-Instale as dependências:
-
-```bash
 python -m pip install -r requirements.txt
 ```
 
-## Relatório exploratório
+No Linux/macOS, ative com `source .venv/bin/activate`.
 
-```bash
+## Linha de comando
+
+Validar o CSV padrão e exportar para `outputs/dados_validados.csv`:
+
+```powershell
 python main.py
 ```
 
-O script lê `data.csv` e gera ou substitui `output.html` na raiz do projeto. Abra o HTML no navegador para consultar o relatório. A geração pode levar alguns minutos.
+Selecionar entrada e saída:
 
-## Interface de validação
+```powershell
+python main.py --entrada data_2025.csv --saida outputs/dados_2025_validados.csv
+```
 
-```bash
+Gerar também um relatório exploratório:
+
+```powershell
+python main.py --entrada data.csv --relatorio outputs/relatorio.html
+```
+
+O relatório é gerado após validar e exportar os dados. Caso sua geração falhe, o CSV já exportado permanece disponível. O comando retorna código 0 em caso de sucesso, 1 para falhas de processamento e 2 para argumentos inválidos. Na CLI, são exibidos os primeiros 20 erros; a interface permite baixar todos.
+
+Os caminhos padrão são relativos à pasta do projeto. Caminhos informados pelo usuário são relativos ao diretório atual do terminal. Consulte `python main.py --help` para ver as opções.
+
+## Interface web
+
+```powershell
 python -m streamlit run src/aplicacao.py
 ```
 
-Abra o endereço exibido no terminal, envie um CSV e clique em **Validar Dados**. A interface apresenta os erros por linha ou, quando todos os registros são válidos, oferece o download de `dados_validados.csv`.
+Abra o endereço apresentado no terminal, envie um CSV e clique em **Validar dados**. Se houver erros, consulte a tabela e baixe o diagnóstico. Se o arquivo inteiro for válido, baixe os dados validados. O número de registro corresponde à posição do dado após o cabeçalho, começando em 1; não representa a linha física de CSVs com campos multilinha.
 
-## Formato dos dados
+## Formato do CSV
 
-Use arquivos UTF-8 separados por vírgula, com estas colunas:
+UTF-8 (com ou sem BOM), separado por vírgulas, com cabeçalho:
 
-| Coluna | Regra atual |
+| Coluna | Regra |
 | --- | --- |
-| `Organizador` | Inteiro obrigatório |
-| `Ano_Mes` | Texto obrigatório |
-| `Dia_da_Semana` | Texto obrigatório |
-| `Tipo_Dia` | Texto obrigatório |
-| `Objetivo` | Texto obrigatório |
-| `Date` | Texto obrigatório; o formato de data ainda não é validado |
+| `Organizador` | Inteiro não negativo, obrigatório |
+| `Ano_Mes` | Texto não vazio, obrigatório |
+| `Dia_da_Semana` | Texto não vazio, obrigatório |
+| `Tipo_Dia` | Texto não vazio, obrigatório |
+| `Objetivo` | Texto não vazio, obrigatório |
+| `Date` | Data válida, como `2025-01-31` |
 | `AdSet_name` | Texto opcional |
-| `Amount_spent` | Número entre 0 e 1.200; padrão 0 quando a coluna está ausente |
-| `Link_clicks` | Inteiro opcional |
-| `Impressions` | Inteiro; padrão 0 quando a coluna está ausente |
-| `Conversions` | Inteiro opcional |
-| `Segmentação` | Texto opcional |
-| `Tipo_de_Anúncio` | Texto obrigatório |
-| `Fase` | Texto obrigatório |
+| `Amount_spent` | Número finito entre 0 e 1.200; padrão 0 se ausente |
+| `Link_clicks` | Inteiro não negativo ou vazio |
+| `Impressions` | Inteiro não negativo; padrão 0 se ausente |
+| `Conversions` | Inteiro não negativo ou vazio |
+| `Segmentação` | Texto opcional; aceita também `Segmentacao` |
+| `Tipo_de_Anúncio` | Texto não vazio; aceita também `Tipo_de_Anuncio` |
+| `Fase` | Texto não vazio, obrigatório |
 
-A interface também aceita `Segmentacao` e `Tipo_de_Anuncio`, nomes internos do modelo. Células vazias são convertidas para `None` e podem gerar erros em campos não opcionais. `data_2025.csv` não contém a coluna opcional de segmentação.
+Espaços nas extremidades dos nomes de colunas e dos textos são removidos. Colunas extras são ignoradas na exportação. Células vazias tornam-se `None`: campos não opcionais não aceitam células vazias, mesmo quando possuem padrão para colunas ausentes. A saída usa os nomes internos `Segmentacao` e `Tipo_de_Anuncio`, datas ISO e UTF-8 com BOM.
+
+## Configuração
+
+Não há credenciais ou serviços externos obrigatórios. Opcionalmente, configure variáveis no processo:
+
+```powershell
+$env:ETL_INPUT = 'data.csv'
+$env:ETL_OUTPUT = 'outputs/dados_validados.csv'
+python main.py
+```
+
+Argumentos da CLI têm prioridade sobre essas variáveis. O `.env.example` documenta os nomes; o `.env` local está ignorado pelo Git e **não é carregado automaticamente**. Não armazene tokens ou senhas em arquivos públicos.
 
 ## Estrutura
 
 ```text
 pipeline-etl-python/
 ├── src/
-│   ├── aplicacao.py       # Interface web e validação dos registros
-│   └── validador.py       # Modelo Pydantic
-├── .env.example          # Orientações de configuração sem segredos
-├── .gitignore
+│   ├── __init__.py
+│   ├── pipeline.py        # Leitura, validação e exportação
+│   ├── validador.py       # Regras de dados
+│   └── aplicacao.py       # Interface Streamlit
+├── tests/test_pipeline.py
+├── main.py               # Linha de comando
 ├── data.csv
 ├── data_2025.csv
-├── main.py               # Geração do relatório exploratório
-├── output.html           # Relatório gerado
+├── output.html           # Relatório preservado do projeto original
+├── outputs/              # Novas saídas, ignoradas pelo Git
+├── .env.example
+├── .gitignore
 ├── requirements.txt
 └── README.md
 ```
 
-## Configuração e publicação
+## Verificação
 
-A versão atual não exige credenciais, não lê variáveis de ambiente e não carrega `.env`. Nenhuma configuração é necessária para executar o projeto. O `.env.example` documenta essa situação.
+```powershell
+python -m unittest discover -s tests -v
+```
 
-O `.env` é reservado para configurações privadas futuras e fica fora do Git. Se adicionar integrações, implemente a leitura dessas variáveis e documente somente exemplos sem valores reais em `.env.example`. Nunca publique tokens ou senhas.
+Os dois arquivos fornecidos foram processados nesta versão: `data.csv` com 2.697 registros e `data_2025.csv` com 419 registros.
 
-Os CSVs e o relatório HTML já são versionados. O relatório contém amostras dos dados de entrada: utilize apenas dados autorizados para divulgação pública e anonimize informações privadas antes de substituir esses arquivos.
+## Autoria e origem
 
-## Escopo atual
+Projeto de **Arthur Juan**, desenvolvido e aprimorado **com auxílio de IA**, a partir de uma cópia integral do seu projeto original. A versão original permanece na pasta `Pipeline ETL com Python`; esta versão está na pasta `Pipeline ETL com Python(IA)`.
 
-O processamento usa arquivos locais e exportação pelo navegador. Ainda não há integração com banco de dados, agendamento ou orquestração. A geração do relatório e a interface de validação são executadas separadamente.
+A cópia preserva o histórico Git e o remoto original. As melhorias estão na branch local `melhorias-ia`; publique em um repositório próprio para manter as duas versões separadas.
+
+## Limites e dados públicos
+
+O pipeline processa o CSV em memória e não possui integração com banco de dados, agendamento ou processamento distribuído. Para arquivos que excedam a memória disponível, será necessário implementar processamento em blocos.
+
+Os CSVs e o HTML herdados estão versionados. Relatórios podem conter amostras dos dados: publique somente informações autorizadas para divulgação e anonimize dados privados antes de compartilhar.
