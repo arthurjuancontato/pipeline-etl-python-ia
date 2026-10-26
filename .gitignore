@@ -1,5 +1,6 @@
 # Ambientes virtuais e cache
 .venv/
+.venv-check/
 venv/
 env/
 __pycache__/

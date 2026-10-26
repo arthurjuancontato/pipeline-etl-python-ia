@@ -33,7 +33,16 @@ def ler_csv(origem: str | Path | BinaryIO) -> pd.DataFrame:
             conteudo = conteudo.decode("utf-8-sig")
     else:
         conteudo = Path(origem).read_text(encoding="utf-8-sig")
-    cabecalho = next(csv.reader(StringIO(conteudo)), [])
+    leitor = csv.reader(StringIO(conteudo.lstrip("\ufeff")), strict=True)
+    try:
+        cabecalho = next(leitor, [])
+        for registro, linha in enumerate(leitor, start=1):
+            if linha and len(linha) != len(cabecalho):
+                raise ValueError(f"Registro {registro}: quantidade de campos diferente do cabeçalho.")
+    except csv.Error as exc:
+        raise ValueError(f"CSV malformado: {exc}") from exc
+    if not cabecalho or any(not nome.strip() for nome in cabecalho):
+        raise ValueError("CSV vazio ou com coluna sem nome.")
     normalizados = [ALIASES.get(nome.strip(), nome.strip()) for nome in cabecalho]
     if len(normalizados) != len(set(normalizados)):
         raise ValueError("CSV contém colunas duplicadas ou aliases conflitantes.")

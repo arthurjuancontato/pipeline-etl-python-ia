@@ -28,9 +28,9 @@ def main(argv=None):
         exportar_csv(resultado, args.saida)
         print(f"{resultado.total} registros exportados para {args.saida}")
         if args.relatorio:
-            from ydata_profiling import ProfileReport
+            from src.relatorio import gerar_html
             args.relatorio.parent.mkdir(parents=True, exist_ok=True)
-            ProfileReport(resultado.dataframe(), title="Campanhas | Arthur Juan", minimal=True).to_file(args.relatorio)
+            args.relatorio.write_text(gerar_html(resultado.dataframe()), encoding="utf-8")
             print(f"Relatório: {args.relatorio}")
         return 0
     except (ValueError, OSError, UnicodeError, ImportError) as exc:
